@@ -1,0 +1,9 @@
+Flask
+opencv-python
+pytesseract
+numpy
+pandas
+ultralytics
+xlsxwriter
+werkzeug
+flask-cors
