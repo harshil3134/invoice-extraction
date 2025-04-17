@@ -1,9 +1,14 @@
-// src/components/ImageUpload/ImageUploadContainer.jsx
 import React, { useState } from 'react';
 import UploadCard from './UploadCard';
 import DataCard from './DataCard';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+// Replace these mixed imports
+// import { Dialog, DialogContent, DialogTitle } from '@radix-ui/react-dialog';
+// import { DialogFooter, DialogHeader } from '../ui/dialog';
+// With these consistent shadcn imports
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from '../ui/textarea';
+import { Button } from '../ui/button';
 function ImageUploadContainer() {
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -12,7 +17,9 @@ function ImageUploadContainer() {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [excelUrl, setExcelUrl] = useState(null);
-
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editedJsonText, setEditedJsonText] = useState('');
+  const [jsonError, setJsonError] = useState(null);
   const handleImageUpload = async (file) => {
     if (!file) return;
     
@@ -30,7 +37,7 @@ function ImageUploadContainer() {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch('http://ec2-100-27-189-60.compute-1.amazonaws.com:5000/extract', {
+      const response = await fetch('http://127.0.0.1:5001/extract', {
         method: 'POST',
         body: formData,
       });
@@ -59,7 +66,33 @@ function ImageUploadContainer() {
   };
 
   const handleEdit = () => {
-    showAlertMessage("Edit functionality would be implemented in a production environment");
+    if (!jsonData) {
+      showAlertMessage("No data to edit");
+      return;
+    }
+    
+    // Format the JSON data with indentation for better readability
+    setEditedJsonText(JSON.stringify(jsonData, null, 2));
+    setJsonError(null);
+    setIsEditModalOpen(true);
+  };
+
+
+  const handleSaveEdit = () => {
+    try {
+      // Parse the edited text to validate it's proper JSON
+      const parsed = JSON.parse(editedJsonText);
+      setJsonData(parsed);
+      setIsEditModalOpen(false);
+      showAlertMessage("JSON data updated successfully");
+    } catch (error) {
+      setJsonError("Invalid JSON format: " + error.message);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
+    setJsonError(null);
   };
 
   const handleDownloadJSON = () => {
@@ -119,6 +152,37 @@ function ImageUploadContainer() {
           </Alert>
         </div>
       )}
+  <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Edit JSON Data</DialogTitle>
+          </DialogHeader>
+          
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Textarea
+              className="font-mono min-h-[300px] p-2 w-full"
+              value={editedJsonText}
+              onChange={(e) => setEditedJsonText(e.target.value)}
+            />
+          </div>
+          
+          {jsonError && (
+            <div className="text-red-500 text-sm mt-2">
+              {jsonError}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
