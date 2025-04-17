@@ -1,0 +1,126 @@
+// src/components/ImageUpload/ImageUploadContainer.jsx
+import React, { useState } from 'react';
+import UploadCard from './UploadCard';
+import DataCard from './DataCard';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+function ImageUploadContainer() {
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [jsonData, setJsonData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [excelUrl, setExcelUrl] = useState(null);
+
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    
+    setImage(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+    
+    // Send the image to the Flask API
+    setIsLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('http://ec2-100-27-189-60.compute-1.amazonaws.com:5000/extract', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setJsonData(data.data);
+      setExcelUrl(data.excel_download_url ? `http://127.0.0.1:5001${data.excel_download_url}` : null);
+      showAlertMessage("Image processed successfully!");
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showAlertMessage(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setImage(null);
+    setImagePreview(null);
+    setJsonData(null);
+    setExcelUrl(null);
+  };
+
+  const handleEdit = () => {
+    showAlertMessage("Edit functionality would be implemented in a production environment");
+  };
+
+  const handleDownloadJSON = () => {
+    if (!jsonData) return;
+    
+    const dataStr = JSON.stringify(jsonData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'image-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up
+    
+    showAlertMessage("JSON downloaded successfully");
+  };
+
+  const handleDownloadExcel = () => {
+    if (!excelUrl) {
+      showAlertMessage("Excel download URL not available");
+      return;
+    }
+    
+    window.open(excelUrl, '_blank');
+    showAlertMessage("Excel download started");
+  };
+
+  const showAlertMessage = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 3000);
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl mx-auto p-6">
+      <UploadCard 
+        imagePreview={imagePreview}
+        handleImageUpload={handleImageUpload}
+        handleReset={handleReset}
+      />
+      
+      <DataCard 
+        jsonData={jsonData}
+        isLoading={isLoading}
+        handleEdit={handleEdit}
+        handleDownloadJSON={handleDownloadJSON}
+        handleDownloadExcel={handleDownloadExcel}
+      />
+      
+      {showAlert && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Alert className={`border ${alertMessage.includes('Error') ? 'bg-red-100 border-red-500 text-red-800' : 'bg-green-100 border-green-500 text-green-800'} w-64`}>
+            <AlertDescription>{alertMessage}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ImageUploadContainer;
