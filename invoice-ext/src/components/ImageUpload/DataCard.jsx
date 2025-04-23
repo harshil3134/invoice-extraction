@@ -46,7 +46,7 @@ function JsonDataDisplay({ jsonData, handleEdit, handleDownloadJSON, handleDownl
           Edit
         </Button>
       </div>
-      <div className="border rounded-lg p-4 bg-gray-50 h-80 overflow-auto font-mono text-sm">
+      <div className="border rounded-lg p-4 bg-gray-50 h-80 overflow-auto font-mono text-sm text-left">
         <pre>{JSON.stringify(jsonData, null, 2)}</pre>
       </div>
       

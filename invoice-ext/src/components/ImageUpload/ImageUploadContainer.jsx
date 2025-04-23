@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import UploadCard from './UploadCard';
 import DataCard from './DataCard';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-// Replace these mixed imports
-// import { Dialog, DialogContent, DialogTitle } from '@radix-ui/react-dialog';
-// import { DialogFooter, DialogHeader } from '../ui/dialog';
-// With these consistent shadcn imports
+import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
@@ -76,15 +73,55 @@ function ImageUploadContainer() {
     setJsonError(null);
     setIsEditModalOpen(true);
   };
+ 
 
+  const handleGenerateExcel = () => {
+    if (!jsonData) {
+      showAlertMessage("No data available to generate Excel");
+      return;
+    }
+  
+    try {
+      const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
 
-  const handleSaveEdit = () => {
+    // Convert JSON data to a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(dataArray);
+
+      // Create a new workbook and append the worksheet
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Data");
+  
+      // Generate a binary Excel file
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  
+      // Create a Blob from the Excel buffer
+      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+  
+      // Create a download link and trigger the download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'extracted-data.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+  
+      showAlertMessage("Excel file generated and downloaded successfully");
+    } catch (error) {
+      console.error('Error generating Excel file:', error);
+      showAlertMessage(`Error: ${error.message}`);
+    }
+  };
+
+  const handleSaveEdit = async() => {
     try {
       // Parse the edited text to validate it's proper JSON
       const parsed = JSON.parse(editedJsonText);
       setJsonData(parsed);
       setIsEditModalOpen(false);
       showAlertMessage("JSON data updated successfully");
+
     } catch (error) {
       setJsonError("Invalid JSON format: " + error.message);
     }
@@ -142,7 +179,7 @@ function ImageUploadContainer() {
         isLoading={isLoading}
         handleEdit={handleEdit}
         handleDownloadJSON={handleDownloadJSON}
-        handleDownloadExcel={handleDownloadExcel}
+        handleDownloadExcel={handleGenerateExcel}
       />
       
       {showAlert && (
@@ -159,8 +196,9 @@ function ImageUploadContainer() {
           </DialogHeader>
           
           <div className="max-h-[60vh] overflow-y-auto">
+           
             <Textarea
-              className="font-mono min-h-[300px] p-2 w-full"
+              className="font-mono min-h-[300px] p-2 w-full text-left"
               value={editedJsonText}
               onChange={(e) => setEditedJsonText(e.target.value)}
             />

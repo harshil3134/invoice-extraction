@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements and install in batches
 COPY requirements.txt .
+RUN apt-get update && apt-get install -y libgl1 libglib2.0-0
 RUN pip install --no-cache-dir flask werkzeug flask-cors pandas xlsxwriter
 RUN pip install --no-cache-dir opencv-python pytesseract numpy
 RUN pip install --no-cache-dir ultralytics
