@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload } from 'lucide-react';
 import ImagePreview from './ImagePreview';
 
-function UploadCard({ imagePreview, handleImageUpload, handleReset }) {
+function UploadCard({ imagePreview, handleImageUpload, handleReset,boundingBoxImageUrl }) {
   const [activeTab, setActiveTab] = useState("preview");
   const fileInputRef = useRef(null);
 
@@ -73,6 +73,7 @@ function UploadCard({ imagePreview, handleImageUpload, handleReset }) {
             <ImagePreview 
               imagePreview={imagePreview} 
               activeTab={activeTab}
+              boundingBoxImageUrl={boundingBoxImageUrl}
             />
             <div className="flex gap-4 mt-4">
               <Button

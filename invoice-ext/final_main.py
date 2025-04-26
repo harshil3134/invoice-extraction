@@ -34,6 +34,10 @@ with open("output.json", "w") as f:
     json.dump(output_data, f, indent=4)
 
 print("Bounding box details saved to output.json")
+# Save the image with bounding boxes
+result.save(save_dir="output_images")  # Save the image with bounding boxes
+print("Image with bounding boxes saved to 'output_images' directory")
+
 result.show()
 
 # ---------------------- Step 2: OCR & Table Parsing ----------------------

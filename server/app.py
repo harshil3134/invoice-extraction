@@ -89,7 +89,21 @@ def process_invoice_image(image_path):
                     "y2": y2
                 }
             })
-    
+    for idx, result in enumerate(results):
+        img_with_boxes = result.plot()
+        
+        # Convert RGB to BGR if it's a NumPy array
+        if isinstance(img_with_boxes, np.ndarray):
+            img_with_boxes_bgr = cv2.cvtColor(img_with_boxes, cv2.COLOR_RGB2BGR)
+        else:
+            # If it's a PIL image (just in case), convert to NumPy and then BGR
+            img_with_boxes = np.array(img_with_boxes)
+            img_with_boxes_bgr = cv2.cvtColor(img_with_boxes, cv2.COLOR_RGB2BGR)
+
+    bounding_box_image_path = os.path.join("outputs", f"image_with_boxes_{idx}.jpg")
+    cv2.imwrite(bounding_box_image_path, img_with_boxes_bgr)
+    print(f"Image with bounding boxes saved to {bounding_box_image_path}")
+
     # Step 2: OCR & Table Parsing
     image = cv2.imread(image_path)
     
@@ -150,7 +164,7 @@ def process_invoice_image(image_path):
             table_df.reset_index(inplace=True)
             table_df.to_excel(writer, sheet_name="Table Data", index=False)
     
-    return final_output, json_file_path, excel_file_path
+    return final_output, json_file_path, excel_file_path, bounding_box_image_path
 
 # Routes
 @app.route('/health', methods=['GET'])
@@ -175,7 +189,7 @@ def extract_invoice():
     
     try:
         # Process the image
-        extracted_data, json_path, excel_path = process_invoice_image(file_path)
+        extracted_data, json_path, excel_path, bounding_box_image_path   = process_invoice_image(file_path)
         
         # Determine response format
         format_type = request.args.get('format', 'json')
@@ -191,7 +205,8 @@ def extract_invoice():
             return jsonify({
                 "status": "success",
                 "data": extracted_data,
-                "excel_download_url": f"/download?file={os.path.basename(excel_path)}"
+                "excel_download_url": f"/download?file={os.path.basename(excel_path)}",
+             "image_download_url": f"/download?file={os.path.basename(bounding_box_image_path)}"
             })
             
     except Exception as e:
