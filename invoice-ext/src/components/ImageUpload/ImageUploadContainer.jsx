@@ -83,23 +83,47 @@ function ImageUploadContainer() {
       showAlertMessage("No data available to generate Excel");
       return;
     }
-  
+
     try {
       const dataArray = Array.isArray(jsonData) ? jsonData : [jsonData];
 
-    // Convert JSON data to a worksheet
-    const worksheet = XLSX.utils.json_to_sheet(dataArray);
-
-      // Create a new workbook and append the worksheet
+      // Create a new workbook
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Extracted Data");
-  
+
+      // Convert main data to a worksheet and append it to the workbook
+      const mainWorksheet = XLSX.utils.json_to_sheet(dataArray);
+      XLSX.utils.book_append_sheet(workbook, mainWorksheet, "Invoice Data");
+
+      // Check if table data exists and add it as a separate sheet
+      if (jsonData.TABLE) {
+        const tableData = jsonData.TABLE;
+
+        // Normalize the table data
+        const tableArray = Object.entries(tableData).map(([key, value]) => {
+          const normalizedRow = { Row: key, ...value };
+
+          // Remove trailing periods from keys
+          Object.keys(normalizedRow).forEach((k) => {
+            if (k.endsWith('.')) {
+              const newKey = k.slice(0, -1);
+              normalizedRow[newKey] = normalizedRow[k];
+              delete normalizedRow[k];
+            }
+          });
+
+          return normalizedRow;
+        });
+
+        const tableWorksheet = XLSX.utils.json_to_sheet(tableArray);
+        XLSX.utils.book_append_sheet(workbook, tableWorksheet, "Table Data");
+      }
+
       // Generate a binary Excel file
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  
+
       // Create a Blob from the Excel buffer
       const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-  
+
       // Create a download link and trigger the download
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -109,7 +133,7 @@ function ImageUploadContainer() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-  
+
       showAlertMessage("Excel file generated and downloaded successfully");
     } catch (error) {
       console.error('Error generating Excel file:', error);

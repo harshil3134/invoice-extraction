@@ -144,7 +144,7 @@ def process_invoice_image(image_path):
     }
     
     final_output = clean_invoice_data(extracted_data, prefixes_to_remove)
-    
+
     # Step 4: Save to JSON and Excel
     filename = os.path.basename(image_path).split('.')[0]
     json_file_path = f"outputs/{filename}_output.json"
@@ -153,7 +153,8 @@ def process_invoice_image(image_path):
     with open(json_file_path, "w") as f:
         json.dump(final_output, f, indent=4)
     
-    table_data = final_output.pop("TABLE", None) if "TABLE" in final_output else None
+    table_data = final_output.copy()
+    table_data.pop("TABLE", None) if "TABLE" in final_output else None
     main_df = pd.DataFrame([final_output])
     
     with pd.ExcelWriter(excel_file_path, engine='xlsxwriter') as writer:
@@ -193,7 +194,7 @@ def extract_invoice():
         
         # Determine response format
         format_type = request.args.get('format', 'json')
-        
+        print("in route",extracted_data)
         if format_type == 'excel':
             return send_file(
                 excel_path,
